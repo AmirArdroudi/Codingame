@@ -1,11 +1,3 @@
-// ###################################################
-//
-//      Author: Amir Ardroudi
-//      date : 21 Dec 2020
-//      https://www.codingame.com/ide/puzzle/code-royale      
-//
-// ###################################################
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
