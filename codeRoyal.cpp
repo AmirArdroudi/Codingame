@@ -108,13 +108,12 @@ public:
     static void Wait()
     {
         cout << "WAIT" << endl;
-
     }
 
-    static void Train(vector<Site> &v_Barracks, int _gold)
+    static void Train(vector<Site>& v_sites, int _gold)
     {
         ostringstream os;
-        for(auto site : v_Barracks)
+        for(auto site : v_sites)
         {
             // TODO: Remove destroyed barracks
             os << " " << site.id;
@@ -125,6 +124,7 @@ public:
 
     static int FindNearestSite(vector<Site> &_sites)
     {
+        
         int nearestId = 0;
         for(Site site : _sites)
         {
@@ -133,8 +133,13 @@ public:
                 nearestId = site.id;
             }
         }
-
         return nearestId;
+    }
+    static bool Contains(vector<Site>& sites, const Site& site)
+    {
+        if(find_if(sites.begin(), sites.end(), [&site](const Site& obj){return site.id == obj.id;}) != sites.end())
+            return true;
+        return false;
     }
 };
 
@@ -145,8 +150,9 @@ int main()
     vector<Site> v_sites;
     vector<Site> v_mySites;
     v_mySites.clear();
-    v_sites.clear();
     vector<Site> enemyBarracks;
+    vector<Site> v_barracks;
+    int towerId = 0;
 
     cin.ignore();
     
@@ -191,10 +197,30 @@ int main()
                 v_sites[i].param1 = param1;
                 v_sites[i].param2 = param2;
             }
-           // TODO: get enemy barracks
 
+            // TODO: Remove destroyed sites from v_mySites
+            // if(v_sites[i].owner != 0 && v_sites[i].structure_type == -1)
+            // {
+            //     // Site *currentSite = &v_sites[i];
+            //     // v_mySites.erase(remove_if(v_mySites.begin(), v_mySites.end(), [&currentSite](const Site& site){return  currentSite->id == site.id;}), v_mySites.end());
+            // }
+            if(v_sites[i].owner == 0 && v_sites[i].structure_type != -1) // if site is mine
+            {
+                if(Commands::Contains(v_mySites, v_sites[i]) == false)
+                    v_mySites.push_back(v_sites[i]);
+                cerr <<"size of my sites: "<<v_mySites.size()<<endl;
+                if(Commands::Contains(v_barracks, v_sites[i]) == false && v_sites[i].structure_type == 2)
+                {
+                    v_barracks.push_back(v_sites[i]);
+                }
+            }
+            // else
+            // {
+            //     Site *currentSite = &v_sites[i];
+            //     v_mySites.erase(remove_if(v_mySites.begin(), v_mySites.end(), [&currentSite](const Site& site){return  currentSite->id == site.id;}), v_mySites.end());
+            // }
         }
-
+       
         // -------------------------------- Update Units --------------------------------
         int numUnits;
         cin >> numUnits; cin.ignore();
@@ -233,41 +259,32 @@ int main()
         nearestSite_id = Commands::FindNearestSite(v_sites);
         
 
-        if(v_mySites.size() < 5)
+        if(v_mySites.size() < 6)
         {
-            if(touchedSite == nearestSite_id)
+            if(touchedSite == nearestSite_id && v_sites[touchedSite].structure_type == -1)
             {
-                if(v_mySites.size() < 2)
+                if(v_mySites.size() < 1)
                     Commands::Build("KNIGHT", nearestSite_id);
-                else if(v_mySites.size() == 3)
+                else if(v_mySites.size() == 4)
+                {
                     Commands::Build("TOWER", nearestSite_id);
+                    towerId = nearestSite_id;
+
+                }
                 else
                     Commands::Build("MINE", nearestSite_id);
-               
             }
             // if the site hasn't built yet
-            else if(v_sites[nearestSite_id].structure_type != 2 || v_sites[nearestSite_id].owner != 0)
+            else if(v_sites[nearestSite_id].structure_type == -1 || v_sites[nearestSite_id].owner != 0)
                 Commands::MoveTo(v_sites[nearestSite_id]);
         }
         else
         {
             // TODO: hide behind your barracks
-            Commands::Wait();
+            Commands::Build("TOWER", towerId);
         }
 
-        for(int i = 0; i < v_mySites.size(); i++)
-        {
-        if(v_sites[touchedSite].owner == 0 && (v_sites[touchedSite].id != v_mySites[i].id))
-        {
-            v_mySites.push_back(v_sites[touchedSite]);
-            cerr <<"my sites: "<< v_mySites.size() << "|| " << endl;
-        }
-        }
-        
-        // TODO: update barracks list
-        vector<Site> v_barracks;
-        
-   
         Commands::Train(v_barracks, gold);
+      
     }
 }
