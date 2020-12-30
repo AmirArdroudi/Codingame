@@ -7,7 +7,9 @@
 
 using namespace std;
 
-
+#define KNIGHT "KNIGHT"
+#define TOWER  "TOWER"
+#define MINE   "MINE"
 class Site
 {
 public:
@@ -24,7 +26,7 @@ public:
     int structure_type;
     enum e_StructureTypes { None = -1, Mine, Tower, Barracks };
 
-    // -1:No structure   0:Friendly   1:Enemy
+    // -1:No structure   0:Fri"\n"y   1:Enemy
     int owner;
     /*
     When no structure: -1
@@ -60,7 +62,7 @@ public:
     // Coordinates of the unit
     int x, y;
     
-    // 0 = Friendly; 1 = Enemy
+    // 0 = Fri"\n"y; 1 = Enemy
     int owner;
 
     // Queen = -1 // knight = 0 // archer = 1
@@ -85,31 +87,38 @@ private:
 public:
     static void MoveTo(Site _site)
     {
-        cout << "MOVE " << _site.x <<" "<< _site.y <<endl;
+        cout << "MOVE " << _site.x <<" "<< _site.y <<"\n";
     }
     static void MoveTo(int _x, int _y)
     {
-        cout << "MOVE " << _x <<" "<< _y <<endl;
+        cout << "MOVE " << _x <<" "<< _y <<"\n";
     }
 
     // TODO: Use enum for different type of buildings
-    static int Build(string _type, int _siteId)
+    static int Build(const string &_type, int _siteId)
     {
-        if(_type == "KNIGHT" || _type == "ARCHER")
-            cout<< "BUILD "<< _siteId <<" BARRACKS-"<< _type << endl;
+        if(_type == KNIGHT)
+            cout<< "BUILD "<< _siteId <<" BARRACKS-"<< _type << "\n";
         else if(_type == "TOWER")
-            cout<< "BUILD "<< _siteId << " TOWER" << endl;
+            cout<< "BUILD "<< _siteId << " TOWER" << "\n";
         else
-            cout<< "BUILD "<< _siteId <<" MINE"<< endl;
+            cout<< "BUILD "<< _siteId <<" MINE"<< "\n";
 
         return _siteId;
     }
 
     static void Wait()
     {
-        cout << "WAIT" << endl;
+        cout << "WAIT" << "\n";
     }
+    static void Train(int _siteId, int _gold)
+    {
+        if(_gold >= 80)
+            cout << "TRAIN " << _siteId << "\n";
+        else
+            printf("TRAIN\n");
 
+    }
     static void Train(vector<Site>& v_sites, int _gold)
     {
         ostringstream os;
@@ -119,23 +128,20 @@ public:
             os << " " << site.id;
         }
         string ids(os.str());
-        cout << "TRAIN" << ids <<endl;
+        cout << "TRAIN" << ids <<"\n";
     }
 
-    static int FindNearestSite(vector<Site> &_sites)
+    static int FindNearestSite(const vector<Site> &_sites)
     {
-        
         int nearestId = 0;
         for(Site site : _sites)
         {
             if(site.distance < _sites[nearestId].distance && site.structure_type == -1 && site.owner != 0)
-            {
                 nearestId = site.id;
-            }
         }
         return nearestId;
     }
-    static bool Contains(vector<Site>& sites, const Site& site)
+    inline static bool Contains(const vector<Site>& sites, const Site& site)
     {
         if(find_if(sites.begin(), sites.end(), [&site](const Site& obj){return site.id == obj.id;}) != sites.end())
             return true;
@@ -149,11 +155,12 @@ int main()
     cin >> numSites;
     vector<Site> v_sites;
     vector<Site> v_mySites;
-    v_mySites.clear();
-    vector<Site> enemyBarracks;
-    vector<Site> v_barracks;
+    Unit* myQueen = nullptr;
+    Unit* enemyQueen = nullptr;
     int towerId = 0;
-
+    int barrackId = 0;
+    int mine_num = 0;
+    int tower_num = 0;
     cin.ignore();
     
     for (int i = 0; i < numSites; i++) 
@@ -182,7 +189,7 @@ int main()
             int gold; // used in future leagues
             int maxMineSize; // used in future leagues
             int structureType; // -1 = No structure, 2 = Barracks
-            int owner; // -1 = No structure, 0 = Friendly, 1 = Enemy
+            int owner; // -1 = No structure, 0 = Fri"\n"y, 1 = Enemy
 
             int param1;
       
@@ -197,37 +204,29 @@ int main()
                 v_sites[i].param1 = param1;
                 v_sites[i].param2 = param2;
             }
-
             // TODO: Remove destroyed sites from v_mySites
-            // if(v_sites[i].owner != 0 && v_sites[i].structure_type == -1)
-            // {
-            //     // Site *currentSite = &v_sites[i];
-            //     // v_mySites.erase(remove_if(v_mySites.begin(), v_mySites.end(), [&currentSite](const Site& site){return  currentSite->id == site.id;}), v_mySites.end());
-            // }
+            if(v_sites[i].owner != 0)
+            {
+                Site *currentSite = &v_sites[i];
+                v_mySites.erase(remove_if(v_mySites.begin(), v_mySites.end(), [&currentSite, &mine_num](const Site& site)
+                    {
+                        return  currentSite->id == site.id;
+                    }), v_mySites.end());
+
+            }
             if(v_sites[i].owner == 0 && v_sites[i].structure_type != -1) // if site is mine
             {
                 if(Commands::Contains(v_mySites, v_sites[i]) == false)
                     v_mySites.push_back(v_sites[i]);
-                cerr <<"size of my sites: "<<v_mySites.size()<<endl;
-                if(Commands::Contains(v_barracks, v_sites[i]) == false && v_sites[i].structure_type == 2)
-                {
-                    v_barracks.push_back(v_sites[i]);
-                }
             }
-            // else
-            // {
-            //     Site *currentSite = &v_sites[i];
-            //     v_mySites.erase(remove_if(v_mySites.begin(), v_mySites.end(), [&currentSite](const Site& site){return  currentSite->id == site.id;}), v_mySites.end());
-            // }
+
+
         }
        
         // -------------------------------- Update Units --------------------------------
         int numUnits;
         cin >> numUnits; cin.ignore();
 
-        Unit* myQueen = nullptr;
-        Unit* enemyQueen = nullptr;
-        
         for (int i = 0; i < numUnits; i++) 
         {
             int x;
@@ -246,33 +245,34 @@ int main()
                     enemyQueen = new Unit(x, y, owner, unitType, health);
             }   
         }
-        // --------------------------------------------------------------------------------
-
 
         // ---------------- Calculate distance of each site from the queen ----------------
         for(int i = 0; i < numSites; i++)
         {
             v_sites[i].distance = v_sites[i].CalDistance(myQueen->x, myQueen->y);
         }
-        // --------------------------------------------------------------------------------
         
         nearestSite_id = Commands::FindNearestSite(v_sites);
         
-
-        if(v_mySites.size() < 6)
+        if(v_mySites.size() < 8)
         {
             if(touchedSite == nearestSite_id && v_sites[touchedSite].structure_type == -1)
             {
                 if(v_mySites.size() < 1)
-                    Commands::Build("KNIGHT", nearestSite_id);
-                else if(v_mySites.size() == 4)
                 {
-                    Commands::Build("TOWER", nearestSite_id);
-                    towerId = nearestSite_id;
-
+                    Commands::Build(KNIGHT, nearestSite_id);
+                    barrackId = nearestSite_id;
+                }
+                else if(v_mySites.size() < 4 && )
+                {
+                    Commands::Build(MINE, nearestSite_id);
                 }
                 else
-                    Commands::Build("MINE", nearestSite_id);
+                {
+                    Commands::Build(TOWER, nearestSite_id);
+                    towerId = nearestSite_id;
+                }
+
             }
             // if the site hasn't built yet
             else if(v_sites[nearestSite_id].structure_type == -1 || v_sites[nearestSite_id].owner != 0)
@@ -280,11 +280,8 @@ int main()
         }
         else
         {
-            // TODO: hide behind your barracks
-            Commands::Build("TOWER", towerId);
+            Commands::Build(TOWER, towerId);
         }
-
-        Commands::Train(v_barracks, gold);
-      
+        Commands::Train(barrackId, gold);
     }
 }
